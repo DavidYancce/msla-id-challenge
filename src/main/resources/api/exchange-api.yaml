@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Exchange Rate API
+  description: API para conversión de monedas con historial y autenticación
+  version: 1.0.0
+  contact:
+    name: MSLA Challenge
+    email: admin@mslachallenge.com
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+security:
+  - basicAuth: []
+
+paths:
+  /api/v1/exchange/convert:
+    post:
+      summary: Convierte una cantidad de dinero entre monedas
+      operationId: convertCurrency
+      tags:
+        - Exchange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversionRequest"
+      responses:
+        "200":
+          description: Conversión exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionResponse"
+        "400":
+          description: Solicitud inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: No autorizado
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/exchange/history:
+    get:
+      summary: Obtiene el historial de conversiones del usuario autenticado
+      operationId: getExchangeHistory
+      tags:
+        - Exchange
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-12-31"
+      responses:
+        "200":
+          description: Historial obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExchangeHistoryResponse"
+        "400":
+          description: Parámetros inválidos
+        "401":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+
+  /api/v1/exchange/summary:
+    get:
+      summary: Obtiene el resumen de cantidades convertidas por moneda destino del usuario autenticado
+      operationId: getExchangeSummary
+      tags:
+        - Exchange
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-12-31"
+      responses:
+        "200":
+          description: Resumen obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CurrencySummaryResponse"
+        "400":
+          description: Parámetros inválidos
+        "401":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  schemas:
+    ConversionRequest:
+      type: object
+      required:
+        - from
+        - to
+        - amount
+      properties:
+        from:
+          type: string
+          example: "USD"
+          description: Moneda de origen (código ISO 4217)
+        to:
+          type: string
+          example: "PEN"
+          description: Moneda de destino (código ISO 4217)
+        amount:
+          type: number
+          format: double
+          example: 100.50
+          description: Cantidad a convertir
+
+    ConversionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          description: ID del registro de conversión
+        date:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
+          description: Fecha y hora de la conversión
+        from:
+          type: string
+          example: "USD"
+          description: Moneda de origen
+        to:
+          type: string
+          example: "PEN"
+          description: Moneda de destino
+        originalAmount:
+          type: number
+          format: double
+          example: 100.50
+          description: Cantidad original
+        convertedAmount:
+          type: number
+          format: double
+          example: 375.68
+          description: Cantidad convertida
+        exchangeRate:
+          type: number
+          format: double
+          example: 3.739165
+          description: Tipo de cambio utilizado
+
+    ExchangeHistoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        conversionDate:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
+        fromCurrency:
+          type: string
+          example: "USD"
+        toCurrency:
+          type: string
+          example: "PEN"
+        originalAmount:
+          type: number
+          format: double
+          example: 100.50
+        convertedAmount:
+          type: number
+          format: double
+          example: 375.68
+        exchangeRate:
+          type: number
+          format: double
+          example: 3.739165
+
+    CurrencySummaryResponse:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: "PEN"
+          description: Moneda destino
+        totalConverted:
+          type: number
+          format: double
+          example: 1500.75
+          description: Total convertido a esta moneda
+        conversionCount:
+          type: integer
+          example: 5
+          description: Número de conversiones realizadas
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error en la conversión"
+        details:
+          type: string
+          example: "La moneda especificada no es válida"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
